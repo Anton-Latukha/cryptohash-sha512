@@ -98,32 +98,6 @@ splitB l b
     (b1, b2) = B.splitAt l b
 
 
-rfc4231Vectors :: [(ByteString,ByteString,ByteString)]
-rfc4231Vectors = -- (secrect,msg,mac)
-    [ (rep 20 0x0b, "Hi There", x"87aa7cdea5ef619d4ff0b4241a1d6cb02379f4e2ce4ec2787ad0b30545e17cdedaa833b7d6b8a702038b274eaea3f4e4be9d914eeb61f1702e696c203a126854")
-    , ("Jefe", "what do ya want for nothing?", x"164b7a7bfcf819e2e395fbe73b56e0a387bd64222e831fd610270cd7ea2505549758bf75c05a994a6d034f65f8f0e6fdcaeab1a34d4a6b4b636e070a38bce737")
-    , (rep 20 0xaa, rep 50 0xdd, x"fa73b0089d56a284efb0f0756c890be9b1b5dbdd8ee81a3655f83e33b2279d39bf3e848279a722c806b485a47e67c807b946a337bee8942674278859e13292fb")
-    , (B.pack [1..25], rep 50 0xcd, x"b0ba465637458c6990e5a8c5f61d4af7e576d97ff94b872de76f8050361ee3dba91ca5c11aa25eb4d679275cc5788063a5f19741120c4f2de2adebeb10a298dd")
-    , (rep 20 0x0c, "Test With Truncation", x"415fad6271580a531d4179bc891d87a650188707922a4fbb36663a1eb16da008711c5b50ddd0fc235084eb9d3364a1454fb2ef67cd1d29fe6773068ea266e96b")
-    , (rep 131 0xaa, "Test Using Larger Than Block-Size Key - Hash Key First", x"80b24263c7c1a3ebb71493c1dd7be8b49b46d1f41b4aeec1121b013783f8f3526b56d037e05f2598bd0fd2215d6a1e5295e64f73f63f0aec8b915a985d786598")
-    , (rep 131 0xaa, "This is a test using a larger than block-size key and a larger than block-size data. The key needs to be hashed before being used by the HMAC algorithm.", x"e37b6a775dc87dbaa4dfa9f96e5e3ffddebd71f8867289865df5a32d20cdc944b6022cac3c4982b10d5eeb55c3e4de15134676fb6de0446065c97440fa8c6a58")
-    ]
-  where
-    x = fst.B16.decode
-    rep n c = B.replicate n c
-
-rfc4231Tests :: [TestTree]
-rfc4231Tests = zipWith makeTest [1::Int ..] rfc4231Vectors
-  where
-    makeTest i (key, msg, mac) = testGroup ("vec"++show i) $
-        [ testCase "hmac" (hex mac  @=? hex (IUT.hmac key msg))
-        , testCase "hmaclazy" (hex mac  @=? hex (IUT.hmaclazy key lazymsg))
-        ]
-      where
-        lazymsg = BL.fromChunks . splitB 1 $ msg
-
-    hex = B16.encode
-
 -- define own 'foldl' here to avoid RULE rewriting to 'hashlazy'
 myfoldl' :: (b -> a -> b) -> b -> [a] -> b
 myfoldl' f z0 xs0 = lgo z0 xs0
@@ -190,6 +164,5 @@ refImplTests =
 main :: IO ()
 main = defaultMain $ testGroup "cryptohash-sha512"
     [ testGroup "KATs" katTests
-    , testGroup "RFC4231" rfc4231Tests
     , testGroup "REF" refImplTests
     ]
