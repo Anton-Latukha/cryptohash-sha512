@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE CPP #-}
 
 module Main (main) where
 
@@ -97,7 +98,7 @@ splitB l b
   where
     (b1, b2) = B.splitAt l b
 
-
+#if !MIN_VERSION_base16_bytestring(1,0,0)
 rfc4231Vectors :: [(ByteString,ByteString,ByteString)]
 rfc4231Vectors = -- (secrect,msg,mac)
     [ (rep 20 0x0b, "Hi There", x"87aa7cdea5ef619d4ff0b4241a1d6cb02379f4e2ce4ec2787ad0b30545e17cdedaa833b7d6b8a702038b274eaea3f4e4be9d914eeb61f1702e696c203a126854")
@@ -123,10 +124,11 @@ rfc4231Tests = zipWith makeTest [1::Int ..] rfc4231Vectors
         lazymsg = BL.fromChunks . splitB 1 $ msg
 
     hex = B16.encode
+#endif
 
 -- define own 'foldl' here to avoid RULE rewriting to 'hashlazy'
 myfoldl' :: (b -> a -> b) -> b -> [a] -> b
-myfoldl' f z0 xs0 = lgo z0 xs0
+myfoldl' f = lgo
   where
     lgo z []     = z
     lgo z (x:xs) = let z' = f z x
@@ -190,6 +192,8 @@ refImplTests =
 main :: IO ()
 main = defaultMain $ testGroup "cryptohash-sha512"
     [ testGroup "KATs" katTests
+#if !MIN_VERSION_base16_bytestring(1,0,0)
     , testGroup "RFC4231" rfc4231Tests
+#endif
     , testGroup "REF" refImplTests
     ]
